@@ -55,6 +55,9 @@ func _tick_timers(delta: float) -> void:
 func _apply_movement() -> void:
 	if dash_time_left > 0.0:
 		velocity = facing * dash_speed
+		# 每帧生成残影
+		if get_parent() != null:
+			ScreenFX.spawn_afterimage(self, get_parent())
 		return
 
 	var movement := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -125,6 +128,7 @@ func receive_enemy_attack(attacker: EnemyController, damage: int) -> void:
 
 	current_health -= damage
 	RunState.register_damage_taken(damage)
+	ScreenFX.flash_white(self, 0.1)
 	if current_health <= 0:
 		is_dead = true
 		emit_signal("died")
@@ -189,7 +193,7 @@ func _bootstrap_visuals() -> void:
 			Vector2(16, 20),
 			Vector2(-16, 20),
 		])
-		body.color = Color(0.97, 0.96, 0.9, 1.0)
+		body.color = Color(0.98, 0.92, 0.72, 1.0)
 		add_child(body)
 
 	if get_node_or_null("CollisionShape2D") == null:

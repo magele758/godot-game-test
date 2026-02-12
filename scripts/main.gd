@@ -14,14 +14,26 @@ var run_finished: bool = false
 var region_profile: Dictionary = {}
 var relic_inventory: Array = []
 var selected_weapon_index: int = 0
+var camera: Camera2D
 
 
 func _ready() -> void:
 	_ensure_input_actions()
+	_setup_camera()
 	_setup_scene()
 	_setup_hud()
 	add_child(run_director)
 	_start_run()
+
+
+func _setup_camera() -> void:
+	camera = Camera2D.new()
+	camera.position = Vector2(640, 370)
+	camera.zoom = Vector2(1.0, 1.0)
+	camera.position_smoothing_enabled = true
+	camera.position_smoothing_speed = 8.0
+	add_child(camera)
+	camera.make_current()
 
 
 func _process(_delta: float) -> void:
@@ -76,6 +88,7 @@ func _enter_next_room() -> void:
 		return
 
 	current_room = run_director.next_room()
+	ScreenFX.room_flash(self, Vector2(1280, 720))
 	room_started_at_msec = Time.get_ticks_msec()
 	room_damage_checkpoint = int(RunState.metrics.get("damage_taken", 0) as int)
 	RunState.next_room()
@@ -132,6 +145,7 @@ func _on_enemy_died(executed: bool, world_position: Vector2) -> void:
 	if executed:
 		RunState.mark_task_complete("tidy_finish")
 	_spawn_defeat_effect(world_position, executed)
+	ScreenFX.shake(camera, 8.0 if executed else 4.0, 0.1)
 
 	if active_enemy_count == 0:
 		var spent_seconds := float(Time.get_ticks_msec() - room_started_at_msec) / 1000.0
@@ -197,6 +211,15 @@ func _finish_run(victory: bool) -> void:
 
 
 func _setup_scene() -> void:
+	# 整体背景
+	var bg := ColorRect.new()
+	bg.color = Color(0.18, 0.17, 0.22, 1.0)
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(1280, 720)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+
+	# 战斗区域（纸张底色）
 	var board := Polygon2D.new()
 	board.polygon = PackedVector2Array([
 		Vector2(80, 120),
@@ -204,14 +227,42 @@ func _setup_scene() -> void:
 		Vector2(1200, 620),
 		Vector2(80, 620),
 	])
-	board.color = Color(0.93, 0.9, 0.78, 1.0)
+	board.color = Color(0.96, 0.94, 0.86, 1.0)
 	add_child(board)
 
-	# 四面碰撞墙，防止角色跑出场地
-	_add_wall(Vector2(640, 112), Vector2(1140, 16))   # 上
-	_add_wall(Vector2(640, 628), Vector2(1140, 16))   # 下
-	_add_wall(Vector2(72, 370), Vector2(16, 516))     # 左
-	_add_wall(Vector2(1208, 370), Vector2(16, 516))   # 右
+	# 网格线（笔记本纸效果）
+	for y in range(140, 620, 24):
+		var line := Line2D.new()
+		line.add_point(Vector2(90, y))
+		line.add_point(Vector2(1190, y))
+		line.width = 1.0
+		line.default_color = Color(0.78, 0.82, 0.92, 0.3)
+		add_child(line)
+
+	# 左侧红线（笔记本装订线）
+	var red_line := Line2D.new()
+	red_line.add_point(Vector2(120, 125))
+	red_line.add_point(Vector2(120, 615))
+	red_line.width = 2.0
+	red_line.default_color = Color(0.85, 0.35, 0.35, 0.4)
+	add_child(red_line)
+
+	# 边框
+	var border := Line2D.new()
+	border.add_point(Vector2(80, 120))
+	border.add_point(Vector2(1200, 120))
+	border.add_point(Vector2(1200, 620))
+	border.add_point(Vector2(80, 620))
+	border.add_point(Vector2(80, 120))
+	border.width = 3.0
+	border.default_color = Color(0.3, 0.28, 0.25, 0.8)
+	add_child(border)
+
+	# 四面碰撞墙
+	_add_wall(Vector2(640, 112), Vector2(1140, 16))
+	_add_wall(Vector2(640, 628), Vector2(1140, 16))
+	_add_wall(Vector2(72, 370), Vector2(16, 516))
+	_add_wall(Vector2(1208, 370), Vector2(16, 516))
 
 
 func _add_wall(pos: Vector2, size: Vector2) -> void:

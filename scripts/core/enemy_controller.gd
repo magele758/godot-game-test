@@ -78,6 +78,7 @@ func take_player_hit(hit: Dictionary, knockback_from: Vector2) -> void:
 		return
 	var damage: int = int(hit.get("damage", 1))
 	current_health -= damage
+	ScreenFX.flash_white(self, 0.06)
 	var dir: Vector2 = (global_position - knockback_from).normalized()
 	velocity = dir * 180.0
 	if current_health <= 0:
@@ -100,7 +101,7 @@ func _bootstrap_visuals() -> void:
 			Vector2(12, 18),
 			Vector2(-12, 18),
 		])
-		body.color = Color(0.2, 0.2, 0.25, 1.0)
+		body.color = Color(0.28, 0.22, 0.35, 1.0)
 		add_child(body)
 
 	if get_node_or_null("CollisionShape2D") == null:
