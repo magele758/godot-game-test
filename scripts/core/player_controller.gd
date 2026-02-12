@@ -23,6 +23,8 @@ var combo_index: int = -1
 var combo_reset_left: float = 0.0
 var is_dead: bool = false
 var relic_combo_damage_bonus: float = 0.0
+var hp_bar_bg: Polygon2D
+var hp_bar_fg: Polygon2D
 
 
 func _ready() -> void:
@@ -38,6 +40,7 @@ func _physics_process(delta: float) -> void:
 	_handle_attack_input()
 	_apply_movement()
 	move_and_slide()
+	_update_hp_bar()
 
 
 func _tick_timers(delta: float) -> void:
@@ -83,6 +86,7 @@ func _do_attack() -> void:
 	# 遗物连段伤害加成由外部注入
 	bonus += relic_combo_damage_bonus
 	var attack_origin := global_position + facing * 12.0
+	_spawn_slash_arc()
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
 		if enemy_node is not EnemyController:
 			continue
@@ -100,9 +104,11 @@ func _do_attack() -> void:
 		)
 		if can_execute:
 			enemy.execute()
+			_apply_hitstop(0.08)
 		else:
 			var hit := CombatResolver.compute_hit(base_damage, bonus, combo_index + 1, false)
 			enemy.take_player_hit(hit, global_position)
+			_apply_hitstop(float(hit.get("hitstop_seconds", 0.04)))
 		RunState.register_combo(combo_tag)
 		emit_signal("attack_landed", combo_tag)
 
@@ -123,6 +129,48 @@ func receive_enemy_attack(attacker: EnemyController, damage: int) -> void:
 	if current_health <= 0:
 		is_dead = true
 		emit_signal("died")
+
+
+func _update_hp_bar() -> void:
+	if hp_bar_fg == null:
+		return
+	var ratio := health_ratio()
+	var half_w := 18.0
+	var right_x := -half_w + half_w * 2.0 * ratio
+	hp_bar_fg.polygon = PackedVector2Array([
+		Vector2(-half_w, -28), Vector2(right_x, -28),
+		Vector2(right_x, -24), Vector2(-half_w, -24),
+	])
+	if ratio <= 0.3:
+		hp_bar_fg.color = Color(0.9, 0.2, 0.2, 0.9)
+	else:
+		hp_bar_fg.color = Color(0.2, 0.85, 0.25, 0.9)
+
+
+func _spawn_slash_arc() -> void:
+	var arc := Polygon2D.new()
+	var angle := facing.angle()
+	var arc_points := PackedVector2Array()
+	for i in range(7):
+		var a := angle - 0.6 + float(i) * 0.2
+		arc_points.append(Vector2(cos(a), sin(a)) * attack_range * 0.9)
+	# 闭合回原点形成扇形
+	arc_points.append(Vector2.ZERO)
+	arc.polygon = arc_points
+	arc.color = Color(1.0, 1.0, 0.85, 0.55)
+	arc.position = global_position + facing * 8.0
+	get_parent().add_child(arc)
+	get_tree().create_timer(0.08).timeout.connect(func() -> void:
+		if is_instance_valid(arc):
+			arc.queue_free()
+	)
+
+
+func _apply_hitstop(duration: float) -> void:
+	Engine.time_scale = 0.05
+	get_tree().create_timer(duration, true, false, true).timeout.connect(func() -> void:
+		Engine.time_scale = 1.0
+	)
 
 
 func is_invulnerable() -> bool:
@@ -152,3 +200,17 @@ func _bootstrap_visuals() -> void:
 		shape.size = Vector2(26, 40)
 		collision.shape = shape
 		add_child(collision)
+
+	# 玩家血条
+	hp_bar_bg = Polygon2D.new()
+	hp_bar_bg.polygon = PackedVector2Array([
+		Vector2(-18, -28), Vector2(18, -28),
+		Vector2(18, -24), Vector2(-18, -24),
+	])
+	hp_bar_bg.color = Color(0.15, 0.15, 0.15, 0.7)
+	add_child(hp_bar_bg)
+
+	hp_bar_fg = Polygon2D.new()
+	hp_bar_fg.polygon = hp_bar_bg.polygon.duplicate()
+	hp_bar_fg.color = Color(0.2, 0.85, 0.25, 0.9)
+	add_child(hp_bar_fg)

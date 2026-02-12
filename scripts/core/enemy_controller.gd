@@ -13,6 +13,8 @@ var current_health: int = max_health
 var target: Node2D
 var attack_cd_left: float = 0.0
 var is_dead: bool = false
+var hp_bar_bg: Polygon2D
+var hp_bar_fg: Polygon2D
 
 
 func _ready() -> void:
@@ -42,6 +44,23 @@ func _physics_process(delta: float) -> void:
 			attack_cd_left = attack_interval
 
 	move_and_slide()
+	_update_hp_bar()
+
+
+func _update_hp_bar() -> void:
+	if hp_bar_fg == null:
+		return
+	var ratio := clamp(float(current_health) / float(max(1, max_health)), 0.0, 1.0)
+	var half_w := 16.0
+	var right_x := -half_w + half_w * 2.0 * ratio
+	hp_bar_fg.polygon = PackedVector2Array([
+		Vector2(-half_w, -26), Vector2(right_x, -26),
+		Vector2(right_x, -22), Vector2(-half_w, -22),
+	])
+	if ratio <= 0.25:
+		hp_bar_fg.color = Color(1.0, 0.85, 0.0, 0.9)
+	else:
+		hp_bar_fg.color = Color(0.85, 0.15, 0.15, 0.9)
 
 
 func can_be_executed() -> bool:
@@ -90,3 +109,17 @@ func _bootstrap_visuals() -> void:
 		shape.size = Vector2(24, 36)
 		collision.shape = shape
 		add_child(collision)
+
+	# 血条
+	hp_bar_bg = Polygon2D.new()
+	hp_bar_bg.polygon = PackedVector2Array([
+		Vector2(-16, -26), Vector2(16, -26),
+		Vector2(16, -22), Vector2(-16, -22),
+	])
+	hp_bar_bg.color = Color(0.2, 0.2, 0.2, 0.7)
+	add_child(hp_bar_bg)
+
+	hp_bar_fg = Polygon2D.new()
+	hp_bar_fg.polygon = hp_bar_bg.polygon.duplicate()
+	hp_bar_fg.color = Color(0.85, 0.15, 0.15, 0.9)
+	add_child(hp_bar_fg)

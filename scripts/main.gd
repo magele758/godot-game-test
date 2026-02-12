@@ -13,6 +13,7 @@ var active_enemy_count: int = 0
 var run_finished: bool = false
 var region_profile: Dictionary = {}
 var relic_inventory: Array = []
+var selected_weapon_index: int = 0
 
 
 func _ready() -> void:
@@ -25,6 +26,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_refresh_hud()
+	_handle_weapon_switch()
 	if Input.is_action_just_pressed("restart_run"):
 		_clear_enemies()
 		_start_run()
@@ -34,12 +36,13 @@ func _start_run() -> void:
 	run_finished = false
 	var seed := int(Time.get_unix_time_from_system())
 	var tasks: Array = ContentDatabase.get_collection("tasks")
-	RunState.begin_run(seed, "paper_blade", tasks)
+	var weapon_id := _get_selected_weapon_id()
+	RunState.begin_run(seed, weapon_id, tasks)
 	region_profile = RegionContentFilter.gore_profile()
 	relic_inventory = []
 	TelemetryLogger.log_event("run_started", {
 		"seed": seed,
-		"weapon_id": "paper_blade",
+		"weapon_id": weapon_id,
 		"region": RegionContentFilter.resolve_region(),
 	})
 
@@ -47,6 +50,11 @@ func _start_run() -> void:
 		player.queue_free()
 	player = PlayerController.new()
 	player.global_position = Vector2(360, 360)
+	# 根据选中武器调整基础伤害
+	var weapons: Array = ContentDatabase.get_collection("weapons")
+	var idx := clampi(selected_weapon_index, 0, max(0, weapons.size() - 1))
+	if not weapons.is_empty():
+		player.base_damage = float(weapons[idx].get("base_damage", 12))
 	player.connect("died", Callable(self, "_on_player_died"))
 	player.connect("perfect_dodge", Callable(self, "_on_perfect_dodge"))
 	add_child(player)
@@ -81,11 +89,12 @@ func _spawn_room_enemies(room_data: Dictionary) -> void:
 
 	for idx in range(active_enemy_count):
 		var enemy := EnemyController.new()
-		_apply_enemy_archetype(enemy, enemy_catalog, idx)
 		enemy.target = player
 		enemy.global_position = Vector2(700 + idx * 40, 300 + (idx % 2) * 80)
 		enemy.connect("died", Callable(self, "_on_enemy_died"))
 		add_child(enemy)
+		# add_child 后 _ready 已执行，Body 节点已创建，再改外观
+		_apply_enemy_archetype(enemy, enemy_catalog, idx)
 
 
 func _clear_enemies() -> void:
@@ -99,10 +108,22 @@ func _apply_enemy_archetype(enemy: EnemyController, enemy_catalog: Array, idx: i
 		return
 	var archetype: Dictionary = enemy_catalog[idx % enemy_catalog.size()]
 	enemy.max_health = int(archetype.get("hp", enemy.max_health))
-	enemy.current_health = enemy.max_health
 	enemy.move_speed = float(archetype.get("move_speed", enemy.move_speed))
 	enemy.attack_damage = int(archetype.get("attack_damage", enemy.attack_damage))
 	enemy.attack_interval = float(archetype.get("attack_interval", enemy.attack_interval))
+
+	# Boss 房间倍率：3 倍血、1.5 倍伤、体型放大
+	var room_type := str(current_room.get("type", "combat"))
+	if room_type == "boss":
+		enemy.max_health *= 3
+		enemy.attack_damage = int(float(enemy.attack_damage) * 1.5)
+		enemy.attack_range *= 1.3
+		var body_node := enemy.get_node_or_null("Body")
+		if body_node is Polygon2D:
+			body_node.scale = Vector2(1.8, 1.8)
+			body_node.color = Color(0.55, 0.08, 0.12, 1.0)
+
+	enemy.current_health = enemy.max_health
 
 
 func _on_enemy_died(executed: bool, world_position: Vector2) -> void:
@@ -115,6 +136,11 @@ func _on_enemy_died(executed: bool, world_position: Vector2) -> void:
 	if active_enemy_count == 0:
 		var spent_seconds := float(Time.get_ticks_msec() - room_started_at_msec) / 1000.0
 		var took_damage := int(RunState.metrics.get("damage_taken", 0)) > room_damage_checkpoint
+		# clear_speed_bonus 遗物：快速通关额外注册一次完美闪避奖励
+		var relics_data: Array = ContentDatabase.get_collection("relics")
+		var speed_bonus := RelicEffects.clear_speed_bonus(relic_inventory, relics_data)
+		if speed_bonus > 0.0 and spent_seconds < 15.0:
+			RunState.register_perfect_dodge()
 		RunState.register_room_clear(spent_seconds, took_damage)
 		_roll_relic_drop()
 		TelemetryLogger.log_event("room_cleared", {
@@ -158,11 +184,16 @@ func _finish_run(victory: bool) -> void:
 	})
 
 	var result := "胜利" if victory else "失败"
-	status_label.text = "本局%s | 评级 %s | XP +%d" % [
+	status_label.text = "本局%s | 评级 %s | XP +%d\n按 R 重新开始" % [
 		result,
 		str(progression_summary.get("rank", "D")),
 		int(progression_summary.get("xp_gain", 0)),
 	]
+	# 死亡后让玩家视觉变灰
+	if not victory and is_instance_valid(player):
+		var body_node := player.get_node_or_null("Body")
+		if body_node is Polygon2D:
+			body_node.color = Color(0.4, 0.4, 0.4, 0.5)
 
 
 func _setup_scene() -> void:
@@ -175,6 +206,23 @@ func _setup_scene() -> void:
 	])
 	board.color = Color(0.93, 0.9, 0.78, 1.0)
 	add_child(board)
+
+	# 四面碰撞墙，防止角色跑出场地
+	_add_wall(Vector2(640, 112), Vector2(1140, 16))   # 上
+	_add_wall(Vector2(640, 628), Vector2(1140, 16))   # 下
+	_add_wall(Vector2(72, 370), Vector2(16, 516))     # 左
+	_add_wall(Vector2(1208, 370), Vector2(16, 516))   # 右
+
+
+func _add_wall(pos: Vector2, size: Vector2) -> void:
+	var wall := StaticBody2D.new()
+	wall.position = pos
+	var col := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = size
+	col.shape = shape
+	wall.add_child(col)
+	add_child(wall)
 
 
 func _setup_hud() -> void:
@@ -280,6 +328,23 @@ func _roll_relic_drop() -> void:
 	})
 
 
+func _handle_weapon_switch() -> void:
+	if Input.is_action_just_pressed("weapon_1"):
+		selected_weapon_index = 0
+	elif Input.is_action_just_pressed("weapon_2"):
+		selected_weapon_index = 1
+	elif Input.is_action_just_pressed("weapon_3"):
+		selected_weapon_index = 2
+
+
+func _get_selected_weapon_id() -> String:
+	var weapons: Array = ContentDatabase.get_collection("weapons")
+	if weapons.is_empty():
+		return "paper_blade"
+	var idx := clampi(selected_weapon_index, 0, weapons.size() - 1)
+	return str(weapons[idx].get("id", "paper_blade"))
+
+
 func _refresh_relic_bonuses() -> void:
 	if not is_instance_valid(player):
 		return
@@ -309,6 +374,9 @@ func _ensure_input_actions() -> void:
 	_ensure_action_key("dodge", KEY_K)
 	_ensure_action_key("dodge", KEY_SHIFT)
 	_ensure_action_key("restart_run", KEY_R)
+	_ensure_action_key("weapon_1", KEY_1)
+	_ensure_action_key("weapon_2", KEY_2)
+	_ensure_action_key("weapon_3", KEY_3)
 
 
 func _ensure_action_key(action_name: String, keycode: Key) -> void:
