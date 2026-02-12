@@ -1,0 +1,32 @@
+[
+  {
+    "id": "welcome_patrol",
+    "title": "欢迎巡逻",
+    "description": "和邮局吉祥物打招呼后出门巡逻。",
+    "trigger": "run_start"
+  },
+  {
+    "id": "toy_rescue",
+    "title": "玩偶营救",
+    "description": "清理第一间房，找回走失玩偶。",
+    "trigger": "first_room_clear"
+  },
+  {
+    "id": "mail_dash",
+    "title": "极速投递",
+    "description": "完成一次完美闪避。",
+    "trigger": "first_perfect_dodge"
+  },
+  {
+    "id": "tidy_finish",
+    "title": "整洁收尾",
+    "description": "完成一次处决，保持地板干净。",
+    "trigger": "first_execution"
+  },
+  {
+    "id": "final_delivery",
+    "title": "终点投递",
+    "description": "完成一次完整 Run。",
+    "trigger": "run_complete"
+  }
+]

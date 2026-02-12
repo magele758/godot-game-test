@@ -1,0 +1,12 @@
+{
+  "global": {
+    "gore_intensity": 2,
+    "execution_enabled": true,
+    "blood_color": "#B31212"
+  },
+  "cn": {
+    "gore_intensity": 0,
+    "execution_enabled": false,
+    "blood_color": "#F2D44A"
+  }
+}

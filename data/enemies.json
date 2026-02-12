@@ -1,0 +1,26 @@
+[
+  {
+    "id": "cardboard_grunt",
+    "name": "纸板喽啰",
+    "hp": 30,
+    "move_speed": 110,
+    "attack_damage": 7,
+    "attack_interval": 1.2
+  },
+  {
+    "id": "ink_hound",
+    "name": "墨犬",
+    "hp": 26,
+    "move_speed": 155,
+    "attack_damage": 6,
+    "attack_interval": 1.0
+  },
+  {
+    "id": "stapler_knight",
+    "name": "订书骑士",
+    "hp": 46,
+    "move_speed": 95,
+    "attack_damage": 10,
+    "attack_interval": 1.45
+  }
+]

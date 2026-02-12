@@ -1,0 +1,4 @@
+asset_id,asset_type,source_model,prompt_or_method,license,commercial_use,evidence_link,notes
+char_player_v1,image,local_sd_model,"paper doll hero, cartoon cutout",custom,yes,,main character concept
+enemy_grunt_v1,image,local_sd_model,"cardboard grunt enemy",custom,yes,,enemy concept
+bg_mailroom_v1,image,local_sd_model,"cute mailroom battle stage",custom,yes,,environment concept

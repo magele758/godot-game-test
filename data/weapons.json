@@ -1,0 +1,23 @@
+[
+  {
+    "id": "paper_blade",
+    "name": "纸刃",
+    "base_damage": 12,
+    "moves": ["light_attack", "dash_counter", "air_slash", "execution_plus"],
+    "style": "balanced"
+  },
+  {
+    "id": "card_hammer",
+    "name": "卡锤",
+    "base_damage": 18,
+    "moves": ["light_attack", "guard_break", "execution_plus"],
+    "style": "slow_heavy"
+  },
+  {
+    "id": "ribbon_lance",
+    "name": "缎带枪",
+    "base_damage": 10,
+    "moves": ["light_attack", "air_slash", "dash_counter"],
+    "style": "reach"
+  }
+]

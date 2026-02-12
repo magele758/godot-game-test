@@ -1,0 +1,23 @@
+[
+  {
+    "id": "plush_charm",
+    "name": "绒偶护符",
+    "effect": "perfect_dodge_heal",
+    "value": 2,
+    "weight": 40.0
+  },
+  {
+    "id": "jam_cookie",
+    "name": "果酱曲奇",
+    "effect": "combo_damage",
+    "value": 0.08,
+    "weight": 35.0
+  },
+  {
+    "id": "postal_stamp",
+    "name": "邮票印记",
+    "effect": "clear_speed_bonus",
+    "value": 0.1,
+    "weight": 25.0
+  }
+]

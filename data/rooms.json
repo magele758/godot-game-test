@@ -1,0 +1,32 @@
+[
+  {
+    "id": "toy_hall",
+    "type": "combat",
+    "enemy_count": 2,
+    "time_budget_sec": 90
+  },
+  {
+    "id": "mailroom_maze",
+    "type": "combat",
+    "enemy_count": 3,
+    "time_budget_sec": 100
+  },
+  {
+    "id": "snack_storage",
+    "type": "combat",
+    "enemy_count": 3,
+    "time_budget_sec": 105
+  },
+  {
+    "id": "nursery_bridge",
+    "type": "combat",
+    "enemy_count": 4,
+    "time_budget_sec": 120
+  },
+  {
+    "id": "confetti_warden",
+    "type": "boss",
+    "enemy_count": 1,
+    "time_budget_sec": 180
+  }
+]
