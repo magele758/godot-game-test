@@ -14,7 +14,7 @@ func run() -> Dictionary:
 	if not bool(validation.get("ok", false)):
 		failures.append("Replay validation should pass for valid sample.")
 
-	var signature := InputReplayValidator.compute_signature(replay_events)
+	var signature: String = InputReplayValidator.compute_signature(replay_events)
 	if signature.is_empty():
 		failures.append("Replay signature should not be empty.")
 

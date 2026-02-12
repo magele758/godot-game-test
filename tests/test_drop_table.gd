@@ -3,7 +3,7 @@ extends RefCounted
 
 func run() -> Dictionary:
 	var failures: Array = []
-	var rng := RandomNumberGenerator.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 42
 
 	var entries: Array = [
@@ -24,7 +24,7 @@ func run() -> Dictionary:
 	var sampled_ids: Dictionary = {}
 	for _idx in range(30):
 		var picked: Dictionary = DropTable.pick(entries, rng)
-		var item_id := str(picked.get("id", ""))
+		var item_id: String = str(picked.get("id", ""))
 		sampled_ids[item_id] = true
 
 	if sampled_ids.is_empty():

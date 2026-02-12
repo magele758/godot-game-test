@@ -3,7 +3,8 @@ extends RefCounted
 
 func run() -> Dictionary:
 	var failures: Array = []
-	var manager := load("res://scripts/core/progression_manager.gd").new()
+	var script: GDScript = load("res://scripts/core/progression_manager.gd") as GDScript
+	var manager: Node = script.new() as Node
 	manager.profile = {
 		"profile_level": 1,
 		"lifetime_minutes": 0.0,
@@ -12,7 +13,7 @@ func run() -> Dictionary:
 		"highest_mastery_rank": "D",
 	}
 
-	var snapshot := {
+	var snapshot: Dictionary = {
 		"weapon_id": "paper_blade",
 		"perfect_dodges": 4,
 		"no_hit_rooms": 2,
@@ -23,11 +24,11 @@ func run() -> Dictionary:
 	}
 	var summary: Dictionary = manager.record_run(snapshot)
 
-	if int(summary.get("xp_gain", 0)) < 40:
+	if int(summary.get("xp_gain", 0) as int) < 40:
 		failures.append("XP gain should reflect mastery + time bonus.")
 	if not manager.is_action_unlocked("dash_counter"):
 		failures.append("dash_counter should unlock after first strong run.")
-	if int(manager.profile.get("profile_level", 1)) < 2:
+	if int(manager.profile.get("profile_level", 1) as int) < 2:
 		failures.append("Profile level should increase when actions unlock.")
 
 	return {
