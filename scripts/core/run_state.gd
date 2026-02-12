@@ -21,13 +21,14 @@ func reset() -> void:
 	run_started_at_msec = 0
 
 
-func begin_run(seed: int, weapon_id: String, tasks: Array) -> void:
-	run_seed = seed
+func begin_run(p_seed: int, weapon_id: String, tasks: Array) -> void:
+	run_seed = p_seed
 	room_index = 0
 	current_weapon_id = weapon_id
 	cute_tasks = {}
-	for task in tasks:
-		var task_id := str(task.get("id", ""))
+	for task: Variant in tasks:
+		var task_dict: Dictionary = task as Dictionary
+		var task_id: String = str(task_dict.get("id", ""))
 		if not task_id.is_empty():
 			cute_tasks[task_id] = false
 	metrics = _fresh_metrics()
@@ -51,7 +52,7 @@ func next_room() -> void:
 
 
 func register_perfect_dodge() -> void:
-	metrics["perfect_dodges"] += 1
+	metrics["perfect_dodges"] = int(metrics["perfect_dodges"]) + 1
 
 
 func register_combo(tag: String) -> void:
@@ -60,19 +61,20 @@ func register_combo(tag: String) -> void:
 
 
 func register_kill(executed: bool) -> void:
-	metrics["kills"] += 1
+	metrics["kills"] = int(metrics["kills"]) + 1
 	if executed:
-		metrics["executions"] += 1
+		metrics["executions"] = int(metrics["executions"]) + 1
 
 
 func register_damage_taken(amount: int) -> void:
-	metrics["damage_taken"] += max(0, amount)
+	metrics["damage_taken"] = int(metrics["damage_taken"]) + max(0, amount)
 
 
 func register_room_clear(seconds_spent: float, took_damage: bool) -> void:
-	metrics["room_clear_times"].append(seconds_spent)
+	var clear_times: Array = metrics["room_clear_times"]
+	clear_times.append(seconds_spent)
 	if not took_damage:
-		metrics["no_hit_rooms"] += 1
+		metrics["no_hit_rooms"] = int(metrics["no_hit_rooms"]) + 1
 
 
 func mark_task_complete(task_id: String) -> void:
@@ -86,7 +88,7 @@ func get_combo_variety_count() -> int:
 
 
 func snapshot_for_progression() -> Dictionary:
-	var duration_minutes := 0.0
+	var duration_minutes: float = 0.0
 	if run_started_at_msec > 0:
 		duration_minutes = float(Time.get_ticks_msec() - run_started_at_msec) / 60000.0
 	return {

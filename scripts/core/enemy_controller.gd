@@ -33,8 +33,8 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	var to_target := target.global_position - global_position
-	var distance := to_target.length()
+	var to_target: Vector2 = target.global_position - global_position
+	var distance: float = to_target.length()
 	if distance > attack_range:
 		velocity = to_target.normalized() * move_speed
 	else:
@@ -50,9 +50,9 @@ func _physics_process(delta: float) -> void:
 func _update_hp_bar() -> void:
 	if hp_bar_fg == null:
 		return
-	var ratio := clamp(float(current_health) / float(max(1, max_health)), 0.0, 1.0)
-	var half_w := 16.0
-	var right_x := -half_w + half_w * 2.0 * ratio
+	var ratio: float = clamp(float(current_health) / float(max(1, max_health)), 0.0, 1.0)
+	var half_w: float = 16.0
+	var right_x: float = -half_w + half_w * 2.0 * ratio
 	hp_bar_fg.polygon = PackedVector2Array([
 		Vector2(-half_w, -26), Vector2(right_x, -26),
 		Vector2(right_x, -22), Vector2(-half_w, -22),
@@ -76,9 +76,9 @@ func execute() -> void:
 func take_player_hit(hit: Dictionary, knockback_from: Vector2) -> void:
 	if is_dead:
 		return
-	var damage := int(hit.get("damage", 1))
+	var damage: int = int(hit.get("damage", 1))
 	current_health -= damage
-	var dir := (global_position - knockback_from).normalized()
+	var dir: Vector2 = (global_position - knockback_from).normalized()
 	velocity = dir * 180.0
 	if current_health <= 0:
 		_die(bool(hit.get("execution", false)))
@@ -110,7 +110,6 @@ func _bootstrap_visuals() -> void:
 		collision.shape = shape
 		add_child(collision)
 
-	# 血条
 	hp_bar_bg = Polygon2D.new()
 	hp_bar_bg.polygon = PackedVector2Array([
 		Vector2(-16, -26), Vector2(16, -26),

@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dymllw2g4cum"
+
+[deps]
+
+files=["res://docs/Operations/ai_asset_ledger_template.asset.translation", "res://docs/Operations/ai_asset_ledger_template.source.translation", "res://docs/Operations/ai_asset_ledger_template.prompt.translation", "res://docs/Operations/ai_asset_ledger_template.license.translation", "res://docs/Operations/ai_asset_ledger_template.commercial.translation", "res://docs/Operations/ai_asset_ledger_template.en.translation", "res://docs/Operations/ai_asset_ledger_template.notes.translation"]
+
+source_file="res://docs/Operations/ai_asset_ledger_template.csv"
+dest_files=["res://docs/Operations/ai_asset_ledger_template.asset.translation", "res://docs/Operations/ai_asset_ledger_template.source.translation", "res://docs/Operations/ai_asset_ledger_template.prompt.translation", "res://docs/Operations/ai_asset_ledger_template.license.translation", "res://docs/Operations/ai_asset_ledger_template.commercial.translation", "res://docs/Operations/ai_asset_ledger_template.en.translation", "res://docs/Operations/ai_asset_ledger_template.notes.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

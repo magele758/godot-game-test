@@ -11,15 +11,15 @@ func build_run(seed: int, room_catalog: Array, target_combat_rooms: int = 4) -> 
 	var combat_rooms: Array = []
 	var boss_rooms: Array = []
 
-	for room_data in room_catalog:
-		var room_type := str(room_data.get("type", "combat"))
+	for room_data: Variant in room_catalog:
+		var room_type: String = str(room_data.get("type", "combat"))
 		if room_type == "boss":
 			boss_rooms.append(room_data)
 		else:
 			combat_rooms.append(room_data)
 
 	combat_rooms.shuffle()
-	var picked_rooms: Array = combat_rooms.slice(0, min(target_combat_rooms, combat_rooms.size()))
+	var picked_rooms: Array = combat_rooms.slice(0, mini(target_combat_rooms, combat_rooms.size()))
 	if boss_rooms.is_empty():
 		picked_rooms.append({
 			"id": "fallback_boss",

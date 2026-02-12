@@ -80,12 +80,11 @@ func _handle_attack_input() -> void:
 
 
 func _do_attack() -> void:
-	var combo_tags := ["slash_a", "slash_b", "slash_c"]
-	var combo_tag := combo_tags[combo_index]
-	var bonus := ProgressionManager.get_weapon_bonus(RunState.current_weapon_id)
-	# 遗物连段伤害加成由外部注入
+	var combo_tags: Array[String] = ["slash_a", "slash_b", "slash_c"]
+	var combo_tag: String = combo_tags[combo_index]
+	var bonus: float = ProgressionManager.get_weapon_bonus(RunState.current_weapon_id)
 	bonus += relic_combo_damage_bonus
-	var attack_origin := global_position + facing * 12.0
+	var attack_origin: Vector2 = global_position + facing * 12.0
 	_spawn_slash_arc()
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
 		if enemy_node is not EnemyController:
@@ -96,8 +95,8 @@ func _do_attack() -> void:
 		if attack_origin.distance_to(enemy.global_position) > attack_range:
 			continue
 
-		var region_settings := RegionContentFilter.gore_profile()
-		var can_execute := (
+		var region_settings: Dictionary = RegionContentFilter.gore_profile()
+		var can_execute: bool = (
 			enemy.can_be_executed()
 			and ProgressionManager.is_action_unlocked("execution_plus")
 			and bool(region_settings.get("execution_enabled", true))
@@ -106,7 +105,7 @@ func _do_attack() -> void:
 			enemy.execute()
 			_apply_hitstop(0.08)
 		else:
-			var hit := CombatResolver.compute_hit(base_damage, bonus, combo_index + 1, false)
+			var hit: Dictionary = CombatResolver.compute_hit(base_damage, bonus, combo_index + 1, false)
 			enemy.take_player_hit(hit, global_position)
 			_apply_hitstop(float(hit.get("hitstop_seconds", 0.04)))
 		RunState.register_combo(combo_tag)
@@ -116,7 +115,7 @@ func _do_attack() -> void:
 func receive_enemy_attack(attacker: EnemyController, damage: int) -> void:
 	if is_dead:
 		return
-	var distance := global_position.distance_to(attacker.global_position)
+	var distance: float = global_position.distance_to(attacker.global_position)
 	if dash_time_left > 0.0 and distance <= attack_range + 16.0:
 		RunState.register_perfect_dodge()
 		emit_signal("perfect_dodge")
@@ -134,9 +133,9 @@ func receive_enemy_attack(attacker: EnemyController, damage: int) -> void:
 func _update_hp_bar() -> void:
 	if hp_bar_fg == null:
 		return
-	var ratio := health_ratio()
-	var half_w := 18.0
-	var right_x := -half_w + half_w * 2.0 * ratio
+	var ratio: float = health_ratio()
+	var half_w: float = 18.0
+	var right_x: float = -half_w + half_w * 2.0 * ratio
 	hp_bar_fg.polygon = PackedVector2Array([
 		Vector2(-half_w, -28), Vector2(right_x, -28),
 		Vector2(right_x, -24), Vector2(-half_w, -24),
@@ -149,12 +148,11 @@ func _update_hp_bar() -> void:
 
 func _spawn_slash_arc() -> void:
 	var arc := Polygon2D.new()
-	var angle := facing.angle()
+	var angle: float = facing.angle()
 	var arc_points := PackedVector2Array()
 	for i in range(7):
-		var a := angle - 0.6 + float(i) * 0.2
+		var a: float = angle - 0.6 + float(i) * 0.2
 		arc_points.append(Vector2(cos(a), sin(a)) * attack_range * 0.9)
-	# 闭合回原点形成扇形
 	arc_points.append(Vector2.ZERO)
 	arc.polygon = arc_points
 	arc.color = Color(1.0, 1.0, 0.85, 0.55)
@@ -201,7 +199,6 @@ func _bootstrap_visuals() -> void:
 		collision.shape = shape
 		add_child(collision)
 
-	# 玩家血条
 	hp_bar_bg = Polygon2D.new()
 	hp_bar_bg.polygon = PackedVector2Array([
 		Vector2(-18, -28), Vector2(18, -28),

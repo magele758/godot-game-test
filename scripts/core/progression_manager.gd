@@ -63,37 +63,37 @@ func _ensure_profile_shape() -> void:
 
 
 func record_run(snapshot: Dictionary) -> Dictionary:
-	var weapon_id := str(snapshot.get("weapon_id", "paper_blade"))
-	var perfect_dodges := int(snapshot.get("perfect_dodges", 0))
-	var no_hit_rooms := int(snapshot.get("no_hit_rooms", 0))
-	var combo_variety_count := int(snapshot.get("combo_variety_count", 0))
-	var damage_taken := int(snapshot.get("damage_taken", 0))
-	var executions := int(snapshot.get("executions", 0))
-	var duration_minutes := float(snapshot.get("duration_minutes", 0.0))
+	var weapon_id: String = str(snapshot.get("weapon_id", "paper_blade"))
+	var perfect_dodges: int = int(snapshot.get("perfect_dodges", 0))
+	var no_hit_rooms: int = int(snapshot.get("no_hit_rooms", 0))
+	var combo_variety_count: int = int(snapshot.get("combo_variety_count", 0))
+	var damage_taken: int = int(snapshot.get("damage_taken", 0))
+	var executions: int = int(snapshot.get("executions", 0))
+	var duration_minutes: float = float(snapshot.get("duration_minutes", 0.0))
 
-	var mastery_score := (
+	var mastery_score: int = (
 		perfect_dodges * 5
 		+ no_hit_rooms * 10
 		+ combo_variety_count * 3
 		+ executions * 4
 		+ max(0, 20 - damage_taken)
 	)
-	var time_bonus := int(duration_minutes * 2.0)
-	var xp_gain := max(8, mastery_score + time_bonus)
+	var time_bonus: int = int(duration_minutes * 2.0)
+	var xp_gain: int = max(8, mastery_score + time_bonus)
 
 	var weapon_xp: Dictionary = profile["weapon_xp"]
 	weapon_xp[weapon_id] = int(weapon_xp.get(weapon_id, 0)) + xp_gain
 
 	var unlocked_actions: Array = profile["unlocked_actions"]
-	for action_id in ACTION_UNLOCKS.keys():
-		var required_xp := int(ACTION_UNLOCKS[action_id])
+	for action_id: String in ACTION_UNLOCKS.keys():
+		var required_xp: int = int(ACTION_UNLOCKS[action_id])
 		if int(weapon_xp[weapon_id]) >= required_xp and not unlocked_actions.has(action_id):
 			unlocked_actions.append(action_id)
 
 	profile["profile_level"] = 1 + int(unlocked_actions.size() / 2)
 	profile["lifetime_minutes"] = float(profile["lifetime_minutes"]) + duration_minutes
 
-	var rank := mastery_rank_from_score(mastery_score)
+	var rank: String = mastery_rank_from_score(mastery_score)
 	if _rank_value(rank) > _rank_value(str(profile["highest_mastery_rank"])):
 		profile["highest_mastery_rank"] = rank
 
@@ -110,9 +110,9 @@ func record_run(snapshot: Dictionary) -> Dictionary:
 
 func get_weapon_bonus(weapon_id: String) -> float:
 	var weapon_xp: Dictionary = profile.get("weapon_xp", {})
-	var xp := float(weapon_xp.get(weapon_id, 0))
+	var xp: float = float(weapon_xp.get(weapon_id, 0))
 	# 非线性成长，确保手法收益始终大于纯时长收益
-	var bonus := min(0.15, log(1.0 + xp / 50.0) * 0.05)
+	var bonus: float = min(0.15, log(1.0 + xp / 50.0) * 0.05)
 	return 1.0 + bonus
 
 

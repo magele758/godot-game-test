@@ -34,9 +34,9 @@ func _process(_delta: float) -> void:
 
 func _start_run() -> void:
 	run_finished = false
-	var seed := int(Time.get_unix_time_from_system())
+	var seed: int = int(Time.get_unix_time_from_system())
 	var tasks: Array = ContentDatabase.get_collection("tasks")
-	var weapon_id := _get_selected_weapon_id()
+	var weapon_id: String = _get_selected_weapon_id()
 	RunState.begin_run(seed, weapon_id, tasks)
 	region_profile = RegionContentFilter.gore_profile()
 	relic_inventory = []
@@ -52,9 +52,9 @@ func _start_run() -> void:
 	player.global_position = Vector2(360, 360)
 	# 根据选中武器调整基础伤害
 	var weapons: Array = ContentDatabase.get_collection("weapons")
-	var idx := clampi(selected_weapon_index, 0, max(0, weapons.size() - 1))
+	var idx: int = clampi(selected_weapon_index, 0, max(0, weapons.size() - 1))
 	if not weapons.is_empty():
-		player.base_damage = float(weapons[idx].get("base_damage", 12))
+		player.base_damage = float(weapons[idx].get("base_damage", 12) as int)
 	player.connect("died", Callable(self, "_on_player_died"))
 	player.connect("perfect_dodge", Callable(self, "_on_perfect_dodge"))
 	add_child(player)
@@ -77,7 +77,7 @@ func _enter_next_room() -> void:
 
 	current_room = run_director.next_room()
 	room_started_at_msec = Time.get_ticks_msec()
-	room_damage_checkpoint = int(RunState.metrics.get("damage_taken", 0))
+	room_damage_checkpoint = int(RunState.metrics.get("damage_taken", 0) as int)
 	RunState.next_room()
 	_spawn_room_enemies(current_room)
 	status_label.text = "进入房间: %s" % str(current_room.get("id", "unknown"))
@@ -113,7 +113,7 @@ func _apply_enemy_archetype(enemy: EnemyController, enemy_catalog: Array, idx: i
 	enemy.attack_interval = float(archetype.get("attack_interval", enemy.attack_interval))
 
 	# Boss 房间倍率：3 倍血、1.5 倍伤、体型放大
-	var room_type := str(current_room.get("type", "combat"))
+	var room_type: String = str(current_room.get("type", "combat"))
 	if room_type == "boss":
 		enemy.max_health *= 3
 		enemy.attack_damage = int(float(enemy.attack_damage) * 1.5)
@@ -135,10 +135,10 @@ func _on_enemy_died(executed: bool, world_position: Vector2) -> void:
 
 	if active_enemy_count == 0:
 		var spent_seconds := float(Time.get_ticks_msec() - room_started_at_msec) / 1000.0
-		var took_damage := int(RunState.metrics.get("damage_taken", 0)) > room_damage_checkpoint
+		var took_damage: bool = int(RunState.metrics.get("damage_taken", 0) as int) > room_damage_checkpoint
 		# clear_speed_bonus 遗物：快速通关额外注册一次完美闪避奖励
 		var relics_data: Array = ContentDatabase.get_collection("relics")
-		var speed_bonus := RelicEffects.clear_speed_bonus(relic_inventory, relics_data)
+		var speed_bonus: float = RelicEffects.clear_speed_bonus(relic_inventory, relics_data)
 		if speed_bonus > 0.0 and spent_seconds < 15.0:
 			RunState.register_perfect_dodge()
 		RunState.register_room_clear(spent_seconds, took_damage)
@@ -174,16 +174,16 @@ func _finish_run(victory: bool) -> void:
 	if victory:
 		RunState.mark_task_complete("final_delivery")
 
-	var snapshot := RunState.snapshot_for_progression()
+	var snapshot: Dictionary = RunState.snapshot_for_progression()
 	snapshot["victory"] = victory
 	snapshot["region"] = RegionContentFilter.resolve_region()
-	var progression_summary := ProgressionManager.record_run(snapshot)
+	var progression_summary: Dictionary = ProgressionManager.record_run(snapshot)
 	TelemetryLogger.log_event("run_completed", {
 		"snapshot": snapshot,
 		"progression": progression_summary,
 	})
 
-	var result := "胜利" if victory else "失败"
+	var result: String = "胜利" if victory else "失败"
 	status_label.text = "本局%s | 评级 %s | XP +%d\n按 R 重新开始" % [
 		result,
 		str(progression_summary.get("rank", "D")),
@@ -243,14 +243,14 @@ func _refresh_hud() -> void:
 	if not is_instance_valid(player):
 		return
 
-	var gore_intensity := int(region_profile.get("gore_intensity", 2))
-	var combo_count := RunState.get_combo_variety_count()
-	var tasks_done := 0
+	var gore_intensity: int = int(region_profile.get("gore_intensity", 2) as int)
+	var combo_count: int = RunState.get_combo_variety_count()
+	var tasks_done: int = 0
 	for done in RunState.cute_tasks.values():
 		if bool(done):
 			tasks_done += 1
 
-	var profile_level := int(ProgressionManager.profile.get("profile_level", 1))
+	var profile_level: int = int(ProgressionManager.profile.get("profile_level", 1) as int)
 	hud_label.text = (
 		"HP: %d/%d\n" % [player.current_health, player.max_health]
 		+ "房间: %d | 击杀: %d | 完美闪避: %d\n" % [
@@ -277,7 +277,7 @@ func _refresh_hud() -> void:
 
 func _spawn_defeat_effect(position: Vector2, executed: bool) -> void:
 	var particles := CPUParticles2D.new()
-	var gore_intensity := int(region_profile.get("gore_intensity", 2))
+	var gore_intensity: int = int(region_profile.get("gore_intensity", 2) as int)
 	particles.one_shot = true
 	particles.amount = 10 + gore_intensity * 20
 	particles.lifetime = 0.35
@@ -316,7 +316,7 @@ func _roll_relic_drop() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(RunState.run_seed + RunState.room_index * 97 + Time.get_ticks_msec() % 1000)
 	var picked: Dictionary = DropTable.pick(entries, rng)
-	var relic_id := str(picked.get("id", ""))
+	var relic_id: String = str(picked.get("id", ""))
 	if relic_id.is_empty() or relic_inventory.has(relic_id):
 		return
 
@@ -341,7 +341,7 @@ func _get_selected_weapon_id() -> String:
 	var weapons: Array = ContentDatabase.get_collection("weapons")
 	if weapons.is_empty():
 		return "paper_blade"
-	var idx := clampi(selected_weapon_index, 0, weapons.size() - 1)
+	var idx: int = clampi(selected_weapon_index, 0, weapons.size() - 1)
 	return str(weapons[idx].get("id", "paper_blade"))
 
 
