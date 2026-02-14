@@ -29,23 +29,29 @@ static func flash_white(node: Node2D, duration: float = 0.08) -> void:
 static func spawn_afterimage(source: Node2D, parent: Node) -> void:
 	if source == null or parent == null:
 		return
-	var ghost := Polygon2D.new()
-	# 复制 Body 外形
 	var body: Node = source.get_node_or_null("Body")
-	if body is Polygon2D:
-		ghost.polygon = (body as Polygon2D).polygon.duplicate()
+	if body is Sprite2D and (body as Sprite2D).texture != null:
+		var ghost := Sprite2D.new()
+		ghost.texture = (body as Sprite2D).texture
+		ghost.scale = (body as Sprite2D).scale
+		ghost.modulate = Color(0.6, 0.8, 1.0, 0.35)
+		ghost.global_position = source.global_position
+		parent.add_child(ghost)
+		var tween: Tween = ghost.create_tween()
+		tween.tween_property(ghost, "modulate:a", 0.0, 0.18)
+		tween.tween_callback(ghost.queue_free)
 	else:
+		var ghost := Polygon2D.new()
 		ghost.polygon = PackedVector2Array([
-			Vector2(-12, -20), Vector2(12, -20),
-			Vector2(16, 20), Vector2(-16, 20),
+			Vector2(-20, -36), Vector2(20, -36),
+			Vector2(24, 36), Vector2(-24, 36),
 		])
-	ghost.color = Color(0.7, 0.85, 1.0, 0.35)
-	ghost.global_position = source.global_position
-	parent.add_child(ghost)
-
-	var tween: Tween = ghost.create_tween()
-	tween.tween_property(ghost, "modulate:a", 0.0, 0.2)
-	tween.tween_callback(ghost.queue_free)
+		ghost.color = Color(0.7, 0.85, 1.0, 0.35)
+		ghost.global_position = source.global_position
+		parent.add_child(ghost)
+		var tween: Tween = ghost.create_tween()
+		tween.tween_property(ghost, "modulate:a", 0.0, 0.18)
+		tween.tween_callback(ghost.queue_free)
 
 
 ## 房间切换闪屏

@@ -5,12 +5,12 @@ signal died
 signal perfect_dodge
 signal attack_landed(combo_tag: String)
 
-@export var move_speed: float = 260.0
-@export var dash_speed: float = 560.0
+@export var move_speed: float = 380.0
+@export var dash_speed: float = 800.0
 @export var dash_duration: float = 0.16
 @export var dash_cooldown: float = 0.6
 @export var base_damage: float = 12.0
-@export var attack_range: float = 72.0
+@export var attack_range: float = 110.0
 @export var attack_cooldown: float = 0.24
 @export var max_health: int = 100
 
@@ -70,6 +70,7 @@ func _handle_dash_input() -> void:
 	if Input.is_action_just_pressed("dodge") and dash_cooldown_left <= 0.0:
 		dash_time_left = dash_duration
 		dash_cooldown_left = dash_cooldown
+		AudioMgr.play_sfx("sfx_dodge.wav")
 		if facing == Vector2.ZERO:
 			facing = Vector2.RIGHT
 
@@ -87,7 +88,7 @@ func _do_attack() -> void:
 	var combo_tag: String = combo_tags[combo_index]
 	var bonus: float = ProgressionManager.get_weapon_bonus(RunState.current_weapon_id)
 	bonus += relic_combo_damage_bonus
-	var attack_origin: Vector2 = global_position + facing * 12.0
+	var attack_origin: Vector2 = global_position + facing * 20.0
 	_spawn_slash_arc()
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
 		if enemy_node is not EnemyController:
@@ -113,13 +114,14 @@ func _do_attack() -> void:
 			_apply_hitstop(float(hit.get("hitstop_seconds", 0.04)))
 		RunState.register_combo(combo_tag)
 		emit_signal("attack_landed", combo_tag)
+		AudioMgr.play_sfx("sfx_hit.wav")
 
 
 func receive_enemy_attack(attacker: EnemyController, damage: int) -> void:
 	if is_dead:
 		return
 	var distance: float = global_position.distance_to(attacker.global_position)
-	if dash_time_left > 0.0 and distance <= attack_range + 16.0:
+	if dash_time_left > 0.0 and distance <= attack_range + 30.0:
 		RunState.register_perfect_dodge()
 		emit_signal("perfect_dodge")
 		return
@@ -129,6 +131,7 @@ func receive_enemy_attack(attacker: EnemyController, damage: int) -> void:
 	current_health -= damage
 	RunState.register_damage_taken(damage)
 	ScreenFX.flash_white(self, 0.1)
+	AudioMgr.play_sfx("sfx_hurt.wav")
 	if current_health <= 0:
 		is_dead = true
 		emit_signal("died")
@@ -138,11 +141,11 @@ func _update_hp_bar() -> void:
 	if hp_bar_fg == null:
 		return
 	var ratio: float = health_ratio()
-	var half_w: float = 18.0
+	var half_w: float = 30.0
 	var right_x: float = -half_w + half_w * 2.0 * ratio
 	hp_bar_fg.polygon = PackedVector2Array([
-		Vector2(-half_w, -28), Vector2(right_x, -28),
-		Vector2(right_x, -24), Vector2(-half_w, -24),
+		Vector2(-half_w, -84), Vector2(right_x, -84),
+		Vector2(right_x, -78), Vector2(-half_w, -78),
 	])
 	if ratio <= 0.3:
 		hp_bar_fg.color = Color(0.9, 0.2, 0.2, 0.9)
@@ -160,12 +163,27 @@ func _spawn_slash_arc() -> void:
 	arc_points.append(Vector2.ZERO)
 	arc.polygon = arc_points
 	arc.color = Color(1.0, 1.0, 0.85, 0.55)
-	arc.position = global_position + facing * 8.0
+	arc.position = global_position + facing * 16.0
 	get_parent().add_child(arc)
 	get_tree().create_timer(0.08).timeout.connect(func() -> void:
 		if is_instance_valid(arc):
 			arc.queue_free()
 	)
+	# 打击火花
+	if ResourceLoader.exists("res://assets/effects/hit_spark.png"):
+		var spark_tex: Texture2D = load("res://assets/effects/hit_spark.png") as Texture2D
+		if spark_tex != null:
+			var spark := Sprite2D.new()
+			spark.texture = spark_tex
+			var sc: float = 96.0 / float(spark_tex.get_width())
+			spark.scale = Vector2(sc, sc)
+			spark.global_position = global_position + facing * attack_range * 0.5
+			spark.rotation = randf() * TAU
+			get_parent().add_child(spark)
+			get_tree().create_timer(0.1).timeout.connect(func() -> void:
+				if is_instance_valid(spark):
+					spark.queue_free()
+			)
 
 
 func _apply_hitstop(duration: float) -> void:
@@ -185,28 +203,36 @@ func health_ratio() -> float:
 
 func _bootstrap_visuals() -> void:
 	if get_node_or_null("Body") == null:
-		var body := Polygon2D.new()
+		var body := Sprite2D.new()
 		body.name = "Body"
-		body.polygon = PackedVector2Array([
-			Vector2(-12, -20),
-			Vector2(12, -20),
-			Vector2(16, 20),
-			Vector2(-16, 20),
-		])
-		body.color = Color(0.98, 0.92, 0.72, 1.0)
+		var tex: Texture2D = load("res://assets/sprites/player/player_idle.png") as Texture2D
+		if tex != null:
+			body.texture = tex
+			# 根据原图大小缩放到游戏内约 150px 高
+			var target_h: float = 150.0
+			var sc: float = target_h / float(tex.get_height())
+			body.scale = Vector2(sc, sc)
+		# 外描边 shader
+		var outline_shader: Shader = load("res://assets/shaders/outline2D_outer.gdshader") as Shader
+		if outline_shader != null:
+			var mat := ShaderMaterial.new()
+			mat.shader = outline_shader
+			mat.set_shader_parameter("line_color", Color(0.1, 0.6, 1.0, 0.8))
+			mat.set_shader_parameter("line_thickness", 1.5)
+			body.material = mat
 		add_child(body)
 
 	if get_node_or_null("CollisionShape2D") == null:
 		var collision := CollisionShape2D.new()
 		var shape := RectangleShape2D.new()
-		shape.size = Vector2(26, 40)
+		shape.size = Vector2(60, 140)
 		collision.shape = shape
 		add_child(collision)
 
 	hp_bar_bg = Polygon2D.new()
 	hp_bar_bg.polygon = PackedVector2Array([
-		Vector2(-18, -28), Vector2(18, -28),
-		Vector2(18, -24), Vector2(-18, -24),
+		Vector2(-30, -84), Vector2(30, -84),
+		Vector2(30, -78), Vector2(-30, -78),
 	])
 	hp_bar_bg.color = Color(0.15, 0.15, 0.15, 0.7)
 	add_child(hp_bar_bg)
